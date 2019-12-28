@@ -1,9 +1,11 @@
-<div style="display: block" *ngIf="dataset.length > 0 && options.length > 0">
+
+<div style="display: block" *ngIf="chart">
+  <span>test</span>
   <canvas baseChart
-          [datasets]="dataset"
-          [labels]="labels"
-          [options]="options"
-          [legend]="legend"
-          [chartType]="type">
+          [datasets]="chart.dataset"
+          [labels]="chart.labels"
+          [options]="chart.options"
+          [legend]="chart.legend"
+          [chartType]="chart.chartType">
   </canvas>
 </div>

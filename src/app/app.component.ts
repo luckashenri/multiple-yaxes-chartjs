@@ -20,18 +20,20 @@ export class AppComponent implements OnInit  {
   labels: any;
   legend: boolean;
 
+  chart;
+
 
   constructor(private appService: AppService) {}
 
   ngOnInit() {
     this.appService.getDataSet().subscribe((res: any[]) => {
+      console.log('original', res)
       const data = [];
       const yAxes = [];
       let opposite = false;
       res.forEach(variable => {
         yAxes.push({
           id: variable.variableName.slice(0, 1),
-          labelString: variable.variableName,
           type: 'linear',
           position: opposite ? 'right' : 'left'
         });
@@ -78,6 +80,7 @@ export class AppComponent implements OnInit  {
         countArr[d] = arr;
         this.dataset.push({
           id: d,
+          label: d,
           data: arr,
           yAxisID: d.slice(0, 1)
         })
@@ -105,7 +108,15 @@ export class AppComponent implements OnInit  {
       this.legend = true;
       this.type = 'bar';
 
-      console.log('options', this.options)
+      this.chart = {
+        options: this.options,
+        dataset: this.dataset,
+        legend: true,
+        labels: uniqDatetimes,
+        chartType: 'bar'
+      }
+
+      console.log('chart', this.chart)
     })
 
 
