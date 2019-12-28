@@ -2,6 +2,8 @@ import { Component, Inject, OnInit, OnDestroy, ViewChild } from "@angular/core";
 import { AppService } from "./app.service";
 import moment from "moment";
 import { Moment } from "moment";
+import { ChartDataSets, ChartOptions } from "chart.js";
+import * as ChartZoom from "chartjs-plugin-zoom";
 
 @Component({
   selector: "my-app",
@@ -94,11 +96,46 @@ export class AppComponent implements OnInit {
     console.log("dataset", dataset);
 
     chart = {
-      options: { scales: { yAxes: yAxes } },
+      options: {
+        scales: {
+          yAxes: yAxes,
+          xAxes: [
+            {
+              type: "time",
+              time: {
+                unit: "day",
+                unitStepSize: 1,
+                displayFormats: {
+                  day: 'DD/MM/YYYY hh:mm'
+                }
+              }
+            }
+          ]
+        },
+        plugins: {
+          zoom: {
+            pan: {
+              // Add only if zoom isn't drag: true
+              // Boolean to enable panning
+              enabled: true,
+
+              // Panning directions. Remove the appropriate direction to disable
+              // Eg. 'y' would only allow panning in the y direction
+              mode: "x"
+            },
+            zoom: {
+              enabled: true,
+              drag: false,
+              mode: "x"
+            }
+          }
+        }
+      },
       dataset: dataset,
       legend: true,
       labels: uniqDatetimes,
-      chartType: "bar"
+      chartType: "bar",
+      plugins: [ChartZoom]
     };
 
     console.log("chart", chart);
