@@ -33,14 +33,12 @@ export class AppComponent implements OnInit  {
       let opposite = false;
       res.forEach(variable => {
         yAxes.push({
-          id: variable.variableName.slice(0, 1),
+          id: variable.variableName,
           type: 'linear',
           position: opposite ? 'right' : 'left'
         });
         opposite = !opposite;
       })
-
-      console.log('y axes', yAxes)
 
       res.map(variable => {
         variable.pointsList.forEach(point => {
@@ -48,7 +46,7 @@ export class AppComponent implements OnInit  {
             name: variable.variableName,
             value: point.value,
             datetime: point.datetime,
-            unit: variable.variableName.slice(0, 1)
+            unit: variable.variableName
           })
         })
       })
@@ -82,7 +80,7 @@ export class AppComponent implements OnInit  {
           id: d,
           label: d,
           data: arr,
-          yAxisID: d.slice(0, 1)
+          yAxisID: d
         })
       });
       console.log('COUNT ARRAY:- '+JSON.stringify(countArr));
