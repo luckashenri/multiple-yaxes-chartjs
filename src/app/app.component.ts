@@ -11,60 +11,105 @@ import { Moment} from 'moment';
 
 export class AppComponent implements OnInit  {
   name = 'Angular';
+  data = [];
+
+
+  type: string;
+  dataset = [];
+  options = null;
+  labels: any;
+  legend: boolean;
+
 
   constructor(private appService: AppService) {}
 
   ngOnInit() {
     this.appService.getDataSet().subscribe((res: any[]) => {
-
-      console.log('dataset', res)
-      console.time("all");
-      let labels;
-      let auxLabels = [];
-      let datasets = [];
-      let auxDatasets = [];
+      const data = [];
       const yAxes = [];
-
-      let auxData = [];
-      let test = []
-      let test2 = []
-
+      let opposite = false;
       res.forEach(variable => {
-        console.log('variable', variable)
-        // GETTING LABELS
-        let xAxesReduce = [];
-        variable.pointsList.map(el => {
-          auxLabels.push(moment(el.datetime).toISOString());
+        yAxes.push({
+          id: variable.variableName.slice(0, 1),
+          labelString: variable.variableName,
+          type: 'linear',
+          position: opposite ? 'right' : 'left'
         });
-        labels = Array.from([...new Set(auxLabels)]);
-
-
-        // GETTING DATASETS
-        auxDatasets.push({
-          label: variable.variableName,
-          xAxisID: variable.variableName.slice(0, 1)
-        })
-
-        for (let i = 0; i < labels.length; i++) {
-          // console.log('label[i]', labels[i], labels.length)
-          // for (let j = 0; j < variable.pointsList.length; j++) {
-          //   console.log('point', variable.pointsList[i] ? variable.pointsList[i].value : 0)
-          //   // test.push(variable.pointsList[i] ? variable.pointsList[i].value : 0)
-
-          // }
-          // variable.pointsList.forEach(point => {
-          //   console.log('point', moment(point.datetime));
-          //   console.log('label[i]', labels[i]);
-          //   test[i] = labels.find(item => moment(item).format('x') === moment(point.datetime).format('x')) ? point.value : 0;
-          // })
-        }
-        test2.push(test)
+        opposite = !opposite;
       })
 
+      console.log('y axes', yAxes)
 
-      console.log('test2', test2)
-      console.timeEnd("all");
+      res.map(variable => {
+        variable.pointsList.forEach(point => {
+          data.push({
+            name: variable.variableName,
+            value: point.value,
+            datetime: point.datetime,
+            unit: variable.variableName.slice(0, 1)
+          })
+        })
+      })
+      this.data = data;
+
+      console.log(this.data)
+
+      let uniqDatetimes;
+      let uniqueNames
+
+      // TO FIND UNIQUE ARRAY
+      var datetimes = data.map(t => t.datetime);
+      uniqDatetimes = datetimes.filter((item, pos) => {
+        return datetimes.indexOf(item) === pos;
+      });
+      console.log('UNIQUE MONTHS:- '+uniqDatetimes);
+
+      var names = data.map(t => t.name);
+      uniqueNames = names.filter((item, pos) => {
+          return names.indexOf(item) === pos;
+      });
+      console.log('UNIQUE NAMES:- '+uniqueNames);
+      var countArr = {};
+      uniqueNames.forEach(d => {
+        var arr = [];
+        uniqDatetimes.forEach(k =>{
+          arr.push(getValue(d, k));
+        });
+        countArr[d] = arr;
+        this.dataset.push({
+          id: d,
+          data: arr,
+          yAxisID: d.slice(0, 1)
+        })
+      });
+      console.log('COUNT ARRAY:- '+JSON.stringify(countArr));
+
+      // To get value from the array
+      function getValue(name, datetime){
+        var value = 0;
+        data.forEach(d => {
+          if (d.name === name && d.datetime === datetime){
+            value = d.value;
+          }
+        });
+        return value;
+      }
+
+
+      console.log('dataset', this.dataset)
+
+      this.labels = uniqueNames;
+      this.options = {
+        scales: {yAxes: yAxes},
+      };
+      this.legend = true;
+      this.type = 'bar';
+
+      console.log('options', this.options)
     })
+
+
+
   }
 
 }
