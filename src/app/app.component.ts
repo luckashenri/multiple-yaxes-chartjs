@@ -97,6 +97,11 @@ export class AppComponent implements OnInit {
 
     chart = {
       options: {
+        legend: {
+        display: true,
+        position: 'bottom',
+        fullWidth: true
+      },
         scales: {
           yAxes: yAxes,
           xAxes: [
@@ -132,7 +137,7 @@ export class AppComponent implements OnInit {
         }
       },
       dataset: dataset,
-      legend: true,
+      legend: { position: 'bottom' },
       labels: uniqDatetimes,
       chartType: "bar",
       plugins: [ChartZoom]
