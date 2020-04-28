@@ -4,6 +4,8 @@ import moment from "moment";
 import { Moment } from "moment";
 import { ChartDataSets, ChartOptions } from "chart.js";
 import * as ChartZoom from "chartjs-plugin-zoom";
+import { ClassGetter } from "@angular/compiler/src/output/output_ast";
+import * as Chart from 'chart.js';
 
 @Component({
   selector: "my-app",
@@ -15,135 +17,172 @@ export class AppComponent implements OnInit {
 
   chart;
 
-  constructor(private appService: AppService) {}
+  constructor(private appService: AppService) {
+    Chart.defaults.global.legend.onHover = function(e: MouseEvent, chartLegendLabelItem: Chart.ChartLegendLabelItem) {
+      console.log('onHover');
+      // console.log('chartLegendLabelItem.datasetIndex', chartLegendLabelItem.datasetIndex)
+      const idx: number = chartLegendLabelItem.datasetIndex;
+      // console.log('idx', chartLegendLabelItem.datasetIndex);
+
+      const chart = this.chart as Chart;
+
+      chart.options.scales.yAxes[idx].ticks.fontColor = 'red';
+
+      // chart.options.scales.yAxes[idx].display = !chart.options.scales.yAxes[idx].display;
+
+      const meta = chart.getDatasetMeta(idx);
+      // console.log('meta', meta);
+      // meta.hidden = meta.hidden === null ? !chart.data.datasets[idx].hidden : null;
+
+      chart.update();
+    };
+    Chart.defaults.global.legend.onLeave = function(e: MouseEvent, chartLegendLabelItem: Chart.ChartLegendLabelItem) {
+      console.log('onLeave');
+      // console.log('chartLegendLabelItem.datasetIndex', chartLegendLabelItem.datasetIndex)
+      const idx: number = chartLegendLabelItem.datasetIndex;
+      // console.log('idx', chartLegendLabelItem.datasetIndex);
+
+      const chart = this.chart as Chart;
+
+      chart.options.scales.yAxes[idx].ticks.fontColor = 'blue';
+
+      // chart.options.scales.yAxes[idx].display = !chart.options.scales.yAxes[idx].display;
+
+      const meta = chart.getDatasetMeta(idx);
+      // console.log('meta', meta);
+      // meta.hidden = meta.hidden === null ? !chart.data.datasets[idx].hidden : null;
+
+      chart.update();
+    };
+  }
 
   ngOnInit() {
-    this.appService.getDataSet().subscribe((res: any[]) => {
+    this.appService.getDataSet().subscribe((res) => {
       this.chart = this.mountGraph(res);
     });
   }
 
   mountGraph(payload) {
-    console.log("original", payload);
-    const data = [];
-    const yAxes = [];
-    let dataset = [];
     let chart;
-    let opposite = false;
+    let opposite = true;
+    const yAxes = [];
 
-    payload.forEach(variable => {
+    payload[0].dataset.forEach(dataset => {
       yAxes.push({
-        id: variable.variableName,
-        type: "linear",
-        position: opposite ? "right" : "left"
+        id: dataset.yAxisID,
+        type: 'linear',
+        position: opposite ? 'right' : 'left',
+        ticks: {
+          suggestedMax: dataset.suggestedMax
+        }
       });
       opposite = !opposite;
     });
 
-    payload.map(variable => {
-      variable.pointsList.forEach(point => {
-        data.push({
-          name: variable.variableName,
-          value: point.value,
-          datetime: point.datetime,
-          unit: variable.variableName
-        });
-      });
-    });
-
-    let uniqDatetimes;
-    let uniqueNames;
-
-    // TO FIND UNIQUE ARRAY
-    var datetimes = data.map(t => t.datetime);
-    uniqDatetimes = datetimes.filter((item, pos) => {
-      return datetimes.indexOf(item) === pos;
-    });
-    console.log("UNIQUE MONTHS:- " + uniqDatetimes);
-
-    var names = data.map(t => t.name);
-    uniqueNames = names.filter((item, pos) => {
-      return names.indexOf(item) === pos;
-    });
-    console.log("UNIQUE NAMES:- " + uniqueNames);
-    var countArr = {};
-    uniqueNames.forEach(d => {
-      var arr = [];
-      uniqDatetimes.forEach(k => {
-        arr.push(getValue(d, k));
-      });
-      countArr[d] = arr;
-      dataset.push({
-        id: d,
-        label: d,
-        data: arr,
-        yAxisID: d
-      });
-    });
-    console.log("COUNT ARRAY:- " + JSON.stringify(countArr));
-
-    // To get value from the array
-    function getValue(name, datetime) {
-      var value = 0;
-      data.forEach(d => {
-        if (d.name === name && d.datetime === datetime) {
-          value = d.value;
-        }
-      });
-      return value;
-    }
-
-    console.log("dataset", dataset);
-
     chart = {
+      dataset: payload[0].dataset,
+      legend: true,
+      plugins: [
+        {
+          id: 'zoom'
+        }
+      ],
       options: {
         legend: {
-        display: true,
-        position: 'bottom',
-        fullWidth: true
-      },
-        scales: {
-          yAxes: yAxes,
-          xAxes: [
-            {
-              type: "time",
-              time: {
-                unit: "day",
-                unitStepSize: 1,
-                displayFormats: {
-                  day: 'DD/MM/YYYY hh:mm'
-                }
-              }
-            }
-          ]
+          display: true,
+          position: 'bottom',
+          fullWidth: true,
+          labels: {
+            usePointStyle: true
+            // boxWidth: 5
+          }
         },
+        tooltips: {
+          callbacks: {
+            label: (tooltipItems, data) => {
+              return data.datasets[tooltipItems.datasetIndex].alias
+                ? data.datasets[tooltipItems.datasetIndex].label +
+                    ': ' +
+                    JSON.parse(data.datasets[tooltipItems.datasetIndex].alias)[tooltipItems.yLabel]
+                : data.datasets[tooltipItems.datasetIndex].label +
+                    ': ' +
+                    tooltipItems.yLabel.toFixed(2) +
+                    ' ' +
+                    data.datasets[tooltipItems.datasetIndex].unit;
+            },
+            title: (tooltipItem, data) => {
+              return data.labels[tooltipItem[0].index];
+            }
+          }
+        },
+        scales: {
+          yAxes
+        },
+        responsive: true,
+        maintainAspectRatio: false,
         plugins: {
+          colorschemes: {
+            scheme: 'brewer.Paired12'
+          },
           zoom: {
             pan: {
-              // Add only if zoom isn't drag: true
-              // Boolean to enable panning
               enabled: true,
-
-              // Panning directions. Remove the appropriate direction to disable
-              // Eg. 'y' would only allow panning in the y direction
-              mode: "x"
+              mode: 'x'
             },
             zoom: {
               enabled: true,
               drag: false,
-              mode: "x"
+              mode: 'x'
             }
           }
         }
       },
-      dataset: dataset,
-      legend: { position: 'bottom' },
-      labels: uniqDatetimes,
-      chartType: "bar",
-      plugins: [ChartZoom]
+      labels: payload[1].labels.map(label => moment(label).format('DD/MM/YYYY hh:mm:ss')),
+      chartType: 'line',
+      colors: [
+        {
+          backgroundColor: 'transparent',
+          borderColor: 'rgba(141,198,63,1)',
+          pointBackgroundColor: 'rgba(141,198,63,1)',
+          pointBorderColor: 'rgba(141,198,63,1)',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgba(141,198,63,0.8)'
+        },
+        {
+          backgroundColor: 'transparent',
+          borderColor: 'rgba(51, 166, 92, 1)',
+          pointBackgroundColor: 'rgba(51, 166, 92, 1)',
+          pointBorderColor: 'rgba(51, 166, 92, 1)',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgba(51, 166, 92, 0.8)'
+        },
+        {
+          backgroundColor: 'transparent',
+          borderColor: 'rgba(192, 223, 150, 1)',
+          pointBackgroundColor: 'rgba(192, 223, 150, 1)',
+          pointBorderColor: 'rgba(192, 223, 150, 1)',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgba(192, 223, 150, 0.8)'
+        },
+        {
+          backgroundColor: 'transparent',
+          borderColor: 'rgba(27, 163, 120, 1)',
+          pointBackgroundColor: 'rgba(27, 163, 120, 1)',
+          pointBorderColor: 'rgba(27, 163, 120, 1)',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgba(27, 163, 120, 0.8)'
+        },
+        {
+          backgroundColor: 'transparent',
+          borderColor: 'rgba(103, 145, 46, 1)',
+          pointBackgroundColor: 'rgba(103, 145, 46, 1)',
+          pointBorderColor: 'rgba(103, 145, 46, 1)',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgba(103, 145, 46, 0.8)'
+        }
+      ]
     };
 
-    console.log("chart", chart);
     return chart;
   }
 }
